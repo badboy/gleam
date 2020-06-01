@@ -28,17 +28,23 @@ impl<'a> PackageAnalyser<'a> {
         self,
         _existing_modules: &HashMap<&str, typ::Module>,
     ) -> Result<Package<'a>, Error> {
+        let mut parsed_modules = HashMap::with_capacity(self.sources.len());
         let mut modules = HashMap::with_capacity(self.sources.len());
+
         for Source { name, code, path } in self.sources.into_iter() {
             let ast = parse_source(code.as_str(), name.as_str(), &path)?;
-
-            // TODO: type check
-            // TODO: ensure this is not a duplicate module
-
-            let module = Module { name, code, ast };
-
-            modules.insert(module.name.clone(), module);
+            let module = Parsed {
+                path,
+                name,
+                code,
+                ast,
+            };
+            parsed_modules.insert(module.name.clone(), module);
         }
+
+        // TODO: Sort modules into order using deps tree
+        // TODO: type check
+        // TODO: ensure this is not a duplicate module
 
         Ok(Package {
             name: self.config.name.as_str(),
@@ -117,4 +123,12 @@ pub struct Source {
     path: PathBuf,
     name: String,
     code: String,
+}
+
+#[derive(Debug)]
+struct Parsed {
+    path: PathBuf,
+    name: String,
+    code: String,
+    ast: UntypedModule,
 }
